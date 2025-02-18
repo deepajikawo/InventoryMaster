@@ -44,6 +44,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import cn from "classnames";
+import { DropZone } from "@/components/ui/drop-zone";
+import { useUploadThing } from "@/lib/uploadthing";
 
 export default function ProductsPage() {
   const { toast } = useToast();
@@ -52,6 +54,8 @@ export default function ProductsPage() {
   const [category, setCategory] = useState("");
   const [page, setPage] = useState(1);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const { startUpload } = useUploadThing("productImage");
 
   const { data: products, isLoading } = useQuery<Product[]>({
     queryKey: ["/api/products", { search, category, page }],
@@ -78,6 +82,7 @@ export default function ProductsPage() {
       description: "",
       minimumStock: 0,
       price: 0,
+      imageUrl: "", // Ensure this is initialized as empty string
     },
   });
 
@@ -140,6 +145,33 @@ export default function ProductsPage() {
     setSearch(value);
     setPage(1);
   }, 300);
+
+  const handleImageUpload = async (file: File) => {
+    setUploadingImage(true);
+    try {
+      const [res] = await startUpload([file]);
+      if (res) {
+        // If we're editing a product, update it with the new image
+        if (editingProduct) {
+          setEditingProduct({
+            ...editingProduct,
+            imageUrl: res.url,
+          });
+        } else {
+          // If we're creating a new product, update the form
+          form.setValue("imageUrl", res.url);
+        }
+      }
+    } catch (error) {
+      toast({
+        title: "Failed to upload image",
+        description: "Please try again",
+        variant: "destructive",
+      });
+    } finally {
+      setUploadingImage(false);
+    }
+  };
 
   if (!user?.isAdmin) {
     return <Redirect to="/" />;
@@ -284,6 +316,27 @@ export default function ProductsPage() {
                               type="number"
                               {...field}
                               onChange={(e) => field.onChange(Number(e.target.value))}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="imageUrl"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Product Image</FormLabel>
+                          <FormControl>
+                            <DropZone
+                              onImageDrop={handleImageUpload}
+                              currentImageUrl={field.value || ""} // Ensure we pass empty string if value is null
+                              className={cn(
+                                "w-full",
+                                uploadingImage && "opacity-50 pointer-events-none"
+                              )}
                             />
                           </FormControl>
                           <FormMessage />

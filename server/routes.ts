@@ -4,6 +4,8 @@ import { setupAuth } from "./auth";
 import { storage } from "./storage";
 import { insertProductSchema, insertInventorySchema } from "@shared/schema";
 import { ZodError } from "zod";
+import { createUploadthingExpressMiddleware } from "uploadthing/express";
+import { uploadRouter } from "./uploadthing";
 
 // Extend Express.Request to include user
 declare global {
@@ -27,6 +29,18 @@ function requireAdmin(req: any, res: any, next: any) {
 
 export async function registerRoutes(app: Express): Promise<Server> {
   setupAuth(app);
+
+  // Add uploadthing route
+  app.use(
+    "/api/uploadthing",
+    createUploadthingExpressMiddleware({
+      router: uploadRouter,
+      config: { 
+        uploadthingId: process.env.UPLOADTHING_APP_ID!,
+        uploadthingSecret: process.env.UPLOADTHING_SECRET!,
+      }
+    })
+  );
 
   // User management (admin only)
   app.get("/api/users", requireAdmin, async (req, res) => {
