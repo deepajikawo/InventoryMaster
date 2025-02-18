@@ -1,12 +1,16 @@
 import { User, InsertUser, Product, InsertProduct, Inventory, InsertInventory } from "@shared/schema";
+import { users, products, inventory } from "@shared/schema";
+import { db } from "./db";
+import { eq } from "drizzle-orm";
 import session from "express-session";
-import createMemoryStore from "memorystore";
+import connectPg from "connect-pg-simple";
+import { pool } from "./db";
 
-const MemoryStore = createMemoryStore(session);
+const PostgresSessionStore = connectPg(session);
 
 export interface IStorage {
   sessionStore: session.Store;
-  
+
   // User operations
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
@@ -28,110 +32,104 @@ export interface IStorage {
   listInventoryTransactions(): Promise<Inventory[]>;
 }
 
-export class MemStorage implements IStorage {
+export class DatabaseStorage implements IStorage {
   sessionStore: session.Store;
-  private users: Map<number, User>;
-  private products: Map<number, Product>;
-  private inventory: Map<number, Inventory>;
-  private currentUserId: number = 1;
-  private currentProductId: number = 1;
-  private currentInventoryId: number = 1;
 
   constructor() {
-    this.sessionStore = new MemoryStore({
-      checkPeriod: 86400000,
+    this.sessionStore = new PostgresSessionStore({
+      pool,
+      createTableIfMissing: true,
     });
-    this.users = new Map();
-    this.products = new Map();
-    this.inventory = new Map();
   }
 
+  // User operations
   async getUser(id: number): Promise<User | undefined> {
-    return this.users.get(id);
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user;
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.username === username,
-    );
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user;
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const id = this.currentUserId++;
-    const user: User = { 
-      ...insertUser, 
-      id,
-      isAdmin: this.users.size === 0 // First user is admin
-    };
-    this.users.set(id, user);
+    const [user] = await db.insert(users).values(insertUser).returning();
     return user;
   }
 
   async updateUser(id: number, updates: Partial<User>): Promise<User> {
-    const user = await this.getUser(id);
-    if (!user) throw new Error("User not found");
-    
-    const updatedUser = { ...user, ...updates };
-    this.users.set(id, updatedUser);
-    return updatedUser;
+    const [user] = await db
+      .update(users)
+      .set(updates)
+      .where(eq(users.id, id))
+      .returning();
+    return user;
   }
 
   async deleteUser(id: number): Promise<void> {
-    this.users.delete(id);
+    await db.delete(users).where(eq(users.id, id));
   }
 
   async listUsers(): Promise<User[]> {
-    return Array.from(this.users.values());
+    return await db.select().from(users);
   }
 
+  // Product operations
   async getProduct(id: number): Promise<Product | undefined> {
-    return this.products.get(id);
+    const [product] = await db.select().from(products).where(eq(products.id, id));
+    return product;
   }
 
   async createProduct(insertProduct: InsertProduct): Promise<Product> {
-    const id = this.currentProductId++;
-    const product: Product = { ...insertProduct, id };
-    this.products.set(id, product);
+    const [product] = await db.insert(products).values({
+      ...insertProduct,
+      description: insertProduct.description ?? null,
+    }).returning();
     return product;
   }
 
   async updateProduct(id: number, updates: Partial<Product>): Promise<Product> {
-    const product = await this.getProduct(id);
-    if (!product) throw new Error("Product not found");
-    
-    const updatedProduct = { ...product, ...updates };
-    this.products.set(id, updatedProduct);
-    return updatedProduct;
+    const [product] = await db
+      .update(products)
+      .set(updates)
+      .where(eq(products.id, id))
+      .returning();
+    return product;
   }
 
   async deleteProduct(id: number): Promise<void> {
-    this.products.delete(id);
+    await db.delete(products).where(eq(products.id, id));
   }
 
   async listProducts(): Promise<Product[]> {
-    return Array.from(this.products.values());
+    return await db.select().from(products);
   }
 
+  // Inventory operations
   async createInventoryTransaction(insertTransaction: InsertInventory): Promise<Inventory> {
-    const id = this.currentInventoryId++;
-    const transaction: Inventory = { 
+    const [transaction] = await db.insert(inventory).values({
       ...insertTransaction,
-      id,
-      createdAt: new Date()
-    };
-    this.inventory.set(id, transaction);
+      description: insertTransaction.description ?? null,
+    }).returning();
     return transaction;
   }
 
   async getProductStock(productId: number): Promise<number> {
-    return Array.from(this.inventory.values())
-      .filter(t => t.productId === productId)
-      .reduce((sum, t) => sum + (t.type === 'IN' ? t.quantity : -t.quantity), 0);
+    const transactions = await db
+      .select()
+      .from(inventory)
+      .where(eq(inventory.productId, productId));
+
+    return transactions.reduce(
+      (sum, t) => sum + (t.type === "IN" ? t.quantity : -t.quantity),
+      0
+    );
   }
 
   async listInventoryTransactions(): Promise<Inventory[]> {
-    return Array.from(this.inventory.values());
+    return await db.select().from(inventory);
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();
