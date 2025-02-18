@@ -1,7 +1,7 @@
 import { User, InsertUser, Product, InsertProduct, Inventory, InsertInventory } from "@shared/schema";
 import { users, products, inventory } from "@shared/schema";
 import { db } from "./db";
-import { eq, ilike, and, or } from "drizzle-orm";
+import { eq, ilike, or, sql } from "drizzle-orm";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { pool } from "./db";
@@ -113,10 +113,10 @@ export class DatabaseStorage implements IStorage {
     const { page = 1, limit = 10, search = '', category = '' } = options;
     const offset = (page - 1) * limit;
 
-    let query = db.select().from(products);
+    let baseQuery = db.select().from(products);
 
     if (search) {
-      query = query.where(
+      baseQuery = baseQuery.where(
         or(
           ilike(products.name, `%${search}%`),
           ilike(products.sku, `%${search}%`),
@@ -126,10 +126,11 @@ export class DatabaseStorage implements IStorage {
     }
 
     if (category) {
-      query = query.where(eq(products.category, category));
+      baseQuery = baseQuery.where(eq(products.category, category));
     }
 
-    return await query.limit(limit).offset(offset);
+    const finalQuery = sql`${baseQuery.toSQL()} LIMIT ${limit} OFFSET ${offset}`;
+    return await db.execute(finalQuery);
   }
 
   // Inventory operations

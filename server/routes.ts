@@ -5,6 +5,16 @@ import { storage } from "./storage";
 import { insertProductSchema, insertInventorySchema } from "@shared/schema";
 import { ZodError } from "zod";
 
+// Extend Express.Request to include user
+declare global {
+  namespace Express {
+    interface User {
+      id: number;
+      isAdmin: boolean;
+    }
+  }
+}
+
 function requireAuth(req: any, res: any, next: any) {
   if (!req.isAuthenticated()) return res.sendStatus(401);
   next();
@@ -41,6 +51,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       res.json(products);
     } catch (e) {
+      console.error("Failed to fetch products:", e);
       res.status(500).json({ error: "Failed to fetch products" });
     }
   });
@@ -92,7 +103,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const transaction = insertInventorySchema.parse({
         ...req.body,
-        createdBy: req.user.id,
+        createdBy: req.user!.id,
       });
       const created = await storage.createInventoryTransaction(transaction);
       res.status(201).json(created);
@@ -100,7 +111,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (e instanceof ZodError) {
         res.status(400).json(e.errors);
       } else {
-        throw e;
+        res.status(500).json({ error: "Failed to create transaction" });
       }
     }
   });
