@@ -2,7 +2,7 @@ import { Sidebar } from "@/components/layout/sidebar";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { queryClient } from "@/lib/queryClient";
-import { type Product, type Inventory, insertInventorySchema } from "@shared/schema";
+import { type Product, type Inventory, type InsertInventory, insertInventorySchema } from "@shared/schema";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -34,7 +34,7 @@ import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, ArrowUpCircle, ArrowDownCircle } from "lucide-react";
 
-type TransactionForm = Omit<Inventory, "id" | "createdBy" | "createdAt">;
+type TransactionForm = Omit<InsertInventory, "createdBy">;
 
 export default function InventoryPage() {
   const { toast } = useToast();
@@ -185,7 +185,7 @@ export default function InventoryPage() {
                     <FormItem>
                       <FormLabel>Description</FormLabel>
                       <FormControl>
-                        <Input {...field} />
+                        <Input {...field} value={field.value || ""} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

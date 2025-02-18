@@ -2,7 +2,7 @@ import { Sidebar } from "@/components/layout/sidebar";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { queryClient } from "@/lib/queryClient";
-import { type Product, insertProductSchema } from "@shared/schema";
+import { type Product, type InsertProduct, insertProductSchema } from "@shared/schema";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -41,7 +41,7 @@ export default function ProductsPage() {
     queryKey: ["/api/products"],
   });
 
-  const form = useForm({
+  const form = useForm<InsertProduct>({
     resolver: zodResolver(insertProductSchema),
     defaultValues: {
       name: "",
@@ -54,7 +54,7 @@ export default function ProductsPage() {
   });
 
   const createProduct = useMutation({
-    mutationFn: async (data: Product) => {
+    mutationFn: async (data: InsertProduct) => {
       const res = await fetch("/api/products", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
