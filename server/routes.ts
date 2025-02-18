@@ -4,7 +4,7 @@ import { setupAuth } from "./auth";
 import { storage } from "./storage";
 import { insertProductSchema, insertInventorySchema } from "@shared/schema";
 import { ZodError } from "zod";
-import { createUploadthingExpressHandler } from "uploadthing/express";
+import { createUploadthingExpressMiddleware } from "uploadthing/express";
 import { uploadRouter } from "./uploadthing";
 
 // Extend Express.Request to include user
@@ -33,8 +33,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Add uploadthing route
   app.use(
     "/api/uploadthing",
-    createUploadthingExpressHandler({
+    createUploadthingExpressMiddleware({
       router: uploadRouter,
+      config: { 
+        uploadthingId: process.env.UPLOADTHING_APP_ID!,
+        uploadthingSecret: process.env.UPLOADTHING_SECRET!,
+      }
     })
   );
 
