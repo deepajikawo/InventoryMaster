@@ -31,8 +31,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Product management (admin only)
   app.get("/api/products", requireAuth, async (req, res) => {
-    const products = await storage.listProducts();
-    res.json(products);
+    try {
+      const { page = 1, limit = 10, search = '', category = '' } = req.query;
+      const products = await storage.listProducts({
+        page: Number(page),
+        limit: Number(limit),
+        search: String(search),
+        category: String(category)
+      });
+      res.json(products);
+    } catch (e) {
+      res.status(500).json({ error: "Failed to fetch products" });
+    }
   });
 
   app.post("/api/products", requireAdmin, async (req, res) => {
@@ -44,19 +54,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (e instanceof ZodError) {
         res.status(400).json(e.errors);
       } else {
-        throw e;
+        res.status(500).json({ error: "Failed to create product" });
       }
     }
   });
 
   app.patch("/api/products/:id", requireAdmin, async (req, res) => {
-    const updated = await storage.updateProduct(Number(req.params.id), req.body);
-    res.json(updated);
+    try {
+      const updates = insertProductSchema.partial().parse(req.body);
+      const updated = await storage.updateProduct(Number(req.params.id), updates);
+      res.json(updated);
+    } catch (e) {
+      if (e instanceof ZodError) {
+        res.status(400).json(e.errors);
+      } else {
+        res.status(500).json({ error: "Failed to update product" });
+      }
+    }
   });
 
   app.delete("/api/products/:id", requireAdmin, async (req, res) => {
-    await storage.deleteProduct(Number(req.params.id));
-    res.sendStatus(200);
+    try {
+      await storage.deleteProduct(Number(req.params.id));
+      res.sendStatus(200);
+    } catch (e) {
+      res.status(500).json({ error: "Failed to delete product" });
+    }
   });
 
   // Inventory management

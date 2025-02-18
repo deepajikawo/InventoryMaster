@@ -1,12 +1,19 @@
 import { User, InsertUser, Product, InsertProduct, Inventory, InsertInventory } from "@shared/schema";
 import { users, products, inventory } from "@shared/schema";
 import { db } from "./db";
-import { eq } from "drizzle-orm";
+import { eq, ilike, and, or } from "drizzle-orm";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { pool } from "./db";
 
 const PostgresSessionStore = connectPg(session);
+
+export interface ListProductsOptions {
+  page?: number;
+  limit?: number;
+  search?: string;
+  category?: string;
+}
 
 export interface IStorage {
   sessionStore: session.Store;
@@ -24,7 +31,7 @@ export interface IStorage {
   createProduct(product: InsertProduct): Promise<Product>;
   updateProduct(id: number, product: Partial<Product>): Promise<Product>;
   deleteProduct(id: number): Promise<void>;
-  listProducts(): Promise<Product[]>;
+  listProducts(options?: ListProductsOptions): Promise<Product[]>;
 
   // Inventory operations
   createInventoryTransaction(transaction: InsertInventory): Promise<Inventory>;
@@ -102,8 +109,27 @@ export class DatabaseStorage implements IStorage {
     await db.delete(products).where(eq(products.id, id));
   }
 
-  async listProducts(): Promise<Product[]> {
-    return await db.select().from(products);
+  async listProducts(options: ListProductsOptions = {}): Promise<Product[]> {
+    const { page = 1, limit = 10, search = '', category = '' } = options;
+    const offset = (page - 1) * limit;
+
+    let query = db.select().from(products);
+
+    if (search) {
+      query = query.where(
+        or(
+          ilike(products.name, `%${search}%`),
+          ilike(products.sku, `%${search}%`),
+          ilike(products.description || '', `%${search}%`)
+        )
+      );
+    }
+
+    if (category) {
+      query = query.where(eq(products.category, category));
+    }
+
+    return await query.limit(limit).offset(offset);
   }
 
   // Inventory operations
