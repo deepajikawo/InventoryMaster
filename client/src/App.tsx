@@ -15,13 +15,27 @@ import Profile from "./pages/profile";
 function Router() {
   return (
     <Switch>
-      <Route path="/auth" component={AuthPage} />
-      <ProtectedRoute path="/" component={Dashboard} />
-      <ProtectedRoute path="/products" component={Products} />
-      <ProtectedRoute path="/inventory" component={Inventory} />
-      <ProtectedRoute path="/users" component={Users} />
-      <ProtectedRoute path="/profile" component={Profile} />
-      <Route component={NotFound} />
+      <Route path="/auth">
+        <AuthPage />
+      </Route>
+      <ProtectedRoute path="/products">
+        <Products />
+      </ProtectedRoute>
+      <ProtectedRoute path="/inventory">
+        <Inventory />
+      </ProtectedRoute>
+      <ProtectedRoute path="/users">
+        <Users />
+      </ProtectedRoute>
+      <ProtectedRoute path="/profile">
+        <Profile />
+      </ProtectedRoute>
+      <ProtectedRoute path="/">
+        <Dashboard />
+      </ProtectedRoute>
+      <Route>
+        <NotFound />
+      </Route>
     </Switch>
   );
 }
