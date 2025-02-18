@@ -35,16 +35,16 @@ export function Sidebar() {
             <ul role="list" className="-mx-2 space-y-1">
               {navigation.map((item) => {
                 if (item.adminOnly && !user?.isAdmin) return null;
-                
+
                 return (
                   <li key={item.name}>
                     <Link href={item.href}>
-                      <a
+                      <div
                         className={cn(
                           location === item.href
                             ? "bg-sidebar-accent text-sidebar-accent-foreground"
                             : "text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground",
-                          "group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold mx-2"
+                          "group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold mx-2 cursor-pointer"
                         )}
                       >
                         <item.icon
@@ -52,7 +52,7 @@ export function Sidebar() {
                           aria-hidden="true"
                         />
                         {item.name}
-                      </a>
+                      </div>
                     </Link>
                   </li>
                 );

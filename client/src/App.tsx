@@ -15,12 +15,12 @@ import Profile from "./pages/profile";
 function Router() {
   return (
     <Switch>
+      <Route path="/auth" component={AuthPage} />
       <ProtectedRoute path="/" component={Dashboard} />
       <ProtectedRoute path="/products" component={Products} />
       <ProtectedRoute path="/inventory" component={Inventory} />
       <ProtectedRoute path="/users" component={Users} />
       <ProtectedRoute path="/profile" component={Profile} />
-      <Route path="/auth" component={AuthPage} />
       <Route component={NotFound} />
     </Switch>
   );
