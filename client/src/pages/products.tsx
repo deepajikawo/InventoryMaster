@@ -54,9 +54,6 @@ export default function ProductsPage() {
   const [category, setCategory] = useState("");
   const [page, setPage] = useState(1);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
-  const [uploadingImage, setUploadingImage] = useState(false);
-  const { startUpload } = useUploadThing("productImage");
-
   const { data: products, isLoading } = useQuery<Product[]>({
     queryKey: ["/api/products", { search, category, page }],
   });

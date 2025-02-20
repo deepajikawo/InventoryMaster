@@ -18,7 +18,6 @@ export const products = pgTable("products", {
   description: text("description"),
   minimumStock: integer("minimum_stock").notNull().default(0),
   price: integer("price").notNull(),
-  imageUrl: text("image_url"),
 });
 
 export const inventory = pgTable("inventory", {

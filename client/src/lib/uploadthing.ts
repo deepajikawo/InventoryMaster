@@ -1,5 +1,2 @@
 
-import { createUploadthing } from "@uploadthing/react";
-import type { OurFileRouter } from "../../../server/uploadthing";
-
-export const { useUploadThing } = createUploadthing<OurFileRouter>();
+// This file will be empty and can be deleted
