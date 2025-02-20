@@ -38,3 +38,5 @@ Express for the backend
 Drizzle ORM for database operations
 TailwindCSS for styling
 TypeScript throughout
+
+rm -rf node_modules npm cache clean --force npm install
