@@ -4,7 +4,7 @@ import { setupAuth } from "./auth";
 import { storage } from "./storage";
 import { insertProductSchema, insertInventorySchema } from "@shared/schema";
 import { ZodError } from "zod";
-import { createUploadthingExpressHandler } from "uploadthing/express";
+import { createRouteHandler } from "uploadthing/server";
 import { uploadRouter } from "./uploadthing";
 
 // Extend Express.Request to include user
@@ -31,12 +31,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   setupAuth(app);
 
   // Add uploadthing route
-  app.use(
-    "/api/uploadthing",
-    createUploadthingExpressHandler({
-      router: uploadRouter,
-    })
-  );
+  app.use("/api/uploadthing", createRouteHandler({
+    router: uploadRouter,
+    config: { isDev: process.env.NODE_ENV === "development" }
+  }));
 
   // User management (admin only)
   app.get("/api/users", requireAdmin, async (req, res) => {

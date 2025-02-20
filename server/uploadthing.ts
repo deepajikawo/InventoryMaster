@@ -1,22 +1,19 @@
-import { createUploadthing, type FileRouter } from "uploadthing/server";
-import type { Request } from "express";
 
+import { createUploadthing } from "uploadthing/server";
 const f = createUploadthing();
 
-interface AuthedRequest extends Request {
-  user?: Express.User;
-}
+const auth = (req: Request) => ({ id: (req as any).user?.id ?? null }); 
 
 export const uploadRouter = {
-  productImage: f({ image: { maxFileSize: "4MB", maxFileCount: 1 } })
+  productImage: f({ image: { maxFileSize: "4MB" } })
     .middleware(async ({ req }) => {
-      const authReq = req as unknown as AuthedRequest;
-      if (!authReq.user?.isAdmin) throw new Error("Unauthorized");
-      return { userId: authReq.user.id };
+      const user = auth(req);
+      if (!user.id) throw new Error("Unauthorized");
+      return { userId: user.id };
     })
     .onUploadComplete(async ({ metadata, file }) => {
-      return { url: file.url };
-    }),
-} satisfies FileRouter;
+      return { uploadedBy: metadata.userId, url: file.url };
+    })
+};
 
 export type OurFileRouter = typeof uploadRouter;
